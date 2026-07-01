@@ -53,28 +53,6 @@ To pull later updates (no re-add needed):
 Then describe the task you want to automate (the skill activates on phrases like
 "set up a loop for…" or "automate this task") and answer the interview.
 
-<details>
-<summary>Local development install</summary>
-
-To hack on the plugin from a checkout, point the marketplace at the local path
-instead of the GitHub repo:
-
-```sh
-/plugin marketplace add ~/work/tools/loop-engineering
-```
-
-```sh
-/plugin install loop-engineering@loop-engineering
-```
-
-Or load the plugin directly without a marketplace, for quick iteration:
-
-```sh
-claude --plugin-dir ~/work/tools/loop-engineering
-```
-
-</details>
-
 ## Layout
 
 ```
