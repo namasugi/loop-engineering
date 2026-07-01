@@ -24,6 +24,18 @@ you. This is a community-named paradigm (named by Addy Osmani, June 2026),
 rooted in Anthropic's "Building Effective Agents" guidance — not an official
 Anthropic product term.
 
+## Language
+
+Conduct the entire interview — every question, confirmation, and explanation —
+in the **same language the user is writing in**. The question and prose templates
+below are written in English for your reference; translate them naturally into the
+user's language rather than pasting them verbatim. Prose *inside* the generated
+scaffold files (descriptions, summaries, the filled-in `<placeholder>` text) should
+also match the user's language. Keep everything machine-facing in English:
+file names, section headings that other files/code reference, field keys
+(`iterations`, `refute_streak`, …), code, and identifiers — so the templates and
+`workflow.js` stay wired together.
+
 ## The 6 Building Blocks (orientation — read before interviewing)
 
 Every well-engineered loop is built from these six blocks. The 6-step adoption
