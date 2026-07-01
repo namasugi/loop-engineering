@@ -31,17 +31,40 @@ real files:
 ## Install
 
 ```sh
-# add this repo as a local marketplace
-/plugin marketplace add ~/work/tools/loop-engineering
+# add this repo as a marketplace
+/plugin marketplace add namasugi/loop-engineering
 
-# install the plugin
+# install the plugin from it
 /plugin install loop-engineering@loop-engineering
 ```
 
 Restart your Claude Code session if the new skill isn't picked up immediately.
 
+To pull later updates (no re-add needed):
+
+```sh
+/plugin marketplace update loop-engineering
+```
+
 Then describe the task you want to automate (the skill activates on phrases like
 "set up a loop for…" or "automate this task") and answer the interview.
+
+<details>
+<summary>Local development install</summary>
+
+To hack on the plugin from a checkout, point the marketplace at the local path
+instead of the GitHub repo, or load it directly without a marketplace:
+
+```sh
+# marketplace from a local clone
+/plugin marketplace add ~/work/tools/loop-engineering
+/plugin install loop-engineering@loop-engineering
+
+# or load the plugin directly (no marketplace), for quick iteration
+claude --plugin-dir ~/work/tools/loop-engineering
+```
+
+</details>
 
 ## Layout
 
