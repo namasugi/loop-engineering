@@ -50,8 +50,33 @@ To pull later updates (no re-add needed):
 /plugin marketplace update loop-engineering
 ```
 
-Then describe the task you want to automate (the skill activates on phrases like
-"set up a loop for…" or "automate this task") and answer the interview.
+## Usage
+
+Invoke the design skill directly with the task as its argument:
+
+```sh
+/loop-engineering:design triage failing CI tests every night
+```
+
+Or just describe the task in plain language — the skill auto-activates on phrases
+like "set up a loop for…", "automate this task", or "run this every night":
+
+```text
+Set up a loop that reviews new PRs and leaves comments.
+```
+
+Either way, the skill then **interviews you** (task, side-effects/MCP, CLAUDE.md,
+which model the maker/checker run on) and walks you through all six steps, writing
+the scaffold files listed in [What it does](#what-it-does): `loop-spec.md`,
+`workflow.js`, `STATE.md`, a trigger config, hard limits, and `eval-log.md`.
+
+After the scaffold is generated:
+
+1. **Review** `loop-spec.md` — especially the success definition and any MCP connectors.
+2. **Implement** the `readState` / `writeState` / `mergeQueue` stubs in `workflow.js` for your runtime.
+3. **Dry-run one cycle** with the Workflow tool and watch `STATE.md` update before automating.
+4. **Activate the trigger** (`/schedule`, `/loop`, or GitHub Actions) only after a clean manual run.
+5. **Review** `eval-log.md` after a few cycles and tune the maker prompt / checker criteria.
 
 ## Layout
 
