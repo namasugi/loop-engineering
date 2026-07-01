@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "loop-engineering",
+  "description": "Design & scaffold self-prompting agent loops (loop engineering). Interviews you about a task to automate, then generates the 6-step loop setup: loop-spec, a maker/checker Workflow, durable STATE.md, a schedule (/loop, /schedule, or GitHub Actions), explicit hard limits, and an eval log. Use when the user wants to automate, loop, or 'set on autopilot' a recurring task instead of prompting it by hand.",
+  "version": "0.1.0",
+  "author": { "name": "namasugi" },
+  "homepage": "https://github.com/namasugi/loop-engineering",
+  "repository": "https://github.com/namasugi/loop-engineering",
+  "license": "MIT",
+  "keywords": ["loop-engineering", "agent-loops", "maker-checker", "workflow", "automation", "scaffolder"]
+}

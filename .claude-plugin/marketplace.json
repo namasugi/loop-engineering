@@ -1,0 +1,15 @@
+{
+  "name": "loop-engineering",
+  "description": "Loop engineering toolkit — design & scaffold self-prompting agent loops",
+  "owner": { "name": "namasugi", "url": "https://github.com/namasugi" },
+  "plugins": [
+    {
+      "name": "loop-engineering",
+      "source": "./",
+      "description": "Interview-driven scaffolder that designs a loop-engineering agent loop: maker/checker separation, durable state, hard limits, and scheduling — the 6-step adoption path turned into runnable files.",
+      "license": "MIT",
+      "category": "workflow",
+      "tags": ["loop-engineering", "agents", "workflow", "automation", "maker-checker"]
+    }
+  ]
+}
