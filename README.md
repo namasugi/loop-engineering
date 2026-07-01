@@ -30,11 +30,15 @@ real files:
 
 ## Install
 
-```sh
-# add this repo as a marketplace
-/plugin marketplace add namasugi/loop-engineering
+Add this repo as a marketplace:
 
-# install the plugin from it
+```sh
+/plugin marketplace add namasugi/loop-engineering
+```
+
+Install the plugin from it:
+
+```sh
 /plugin install loop-engineering@loop-engineering
 ```
 
@@ -53,14 +57,19 @@ Then describe the task you want to automate (the skill activates on phrases like
 <summary>Local development install</summary>
 
 To hack on the plugin from a checkout, point the marketplace at the local path
-instead of the GitHub repo, or load it directly without a marketplace:
+instead of the GitHub repo:
 
 ```sh
-# marketplace from a local clone
 /plugin marketplace add ~/work/tools/loop-engineering
-/plugin install loop-engineering@loop-engineering
+```
 
-# or load the plugin directly (no marketplace), for quick iteration
+```sh
+/plugin install loop-engineering@loop-engineering
+```
+
+Or load the plugin directly without a marketplace, for quick iteration:
+
+```sh
 claude --plugin-dir ~/work/tools/loop-engineering
 ```
 
