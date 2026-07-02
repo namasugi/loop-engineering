@@ -5,10 +5,13 @@ A Claude Code plugin that helps you **design and scaffold self-prompting agent l
 recurring task once and the plugin generates a runnable loop for it.
 
 > **What is loop engineering?** Stop prompting the agent yourself; design the loop that
-> prompts it for you. The term was named/codified by Addy Osmani (June 2026), building on
-> Anthropic's *Building Effective Agents* and *Effective Context Engineering* and on
-> statements by Boris Cherny (Claude Code lead) and Peter Steinberger. It is a
-> community-named paradigm — **not an official Anthropic product term.**
+> prompts it for you. Anthropic's official guide — *Getting Started with Loops*
+> (claude.com/blog, 2026) — defines a loop as "an agent repeating cycles of work until a
+> stop condition is met", built from a **trigger, verification, and stop condition**, and
+> classifies loops as turn-based, goal-based (`/goal`), time-based (`/loop`, `/schedule`),
+> or proactive. The *name* "loop engineering" is community coinage (Addy Osmani, June
+> 2026, building on *Building Effective Agents* and statements by Boris Cherny) — the
+> official docs simply say "loops".
 
 ## What it does
 
@@ -21,12 +24,13 @@ real files:
 1. **Inner loop** → `loop-spec.md` — the task decomposed into discovery → handoff → verification → persistence → scheduling
 2. **Maker/Checker** → `workflow.js` wired to the bundled `maker` / `checker` sub-agents — generation and verification as *separate* agents; the checker defaults to **refute** mode
 3. **Durable state** → `STATE.md` — the loop's memory on disk, not in the context window
-4. **Automation/Trigger** → schedule via `/loop`, `/schedule` (cron), or GitHub Actions
+4. **Automation/Trigger** → `/goal` (goal-based pilot), `/loop`, `/schedule` (cron), or GitHub Actions
 5. **Hard limits** → max iterations / cost / wall-clock — whichever trips first stops the loop
 6. **Eval-driven improvement** → a log tracking cost, termination reason, verifier accuracy
 
-> ⚠️ Agent loops can cost ~4× a simple prompt (~15× for multi-agent). Hard limits (step 5)
-> are mandatory, not optional.
+> ⚠️ Loops multiply token spend — every cycle re-runs discovery + maker + checker, and
+> multi-agent patterns can spawn hundreds of agents (per the official guidance: pilot on a
+> small slice first, review `/usage`). Hard limits (step 5) are mandatory, not optional.
 
 ## Install
 
@@ -75,7 +79,7 @@ After the scaffold is generated:
 1. **Review** `loop-spec.md` — especially the success definition and any MCP connectors.
 2. **Implement** the `readState` / `writeState` / `mergeQueue` stubs in `workflow.js` for your runtime.
 3. **Dry-run one cycle** with the Workflow tool and watch `STATE.md` update before automating.
-4. **Activate the trigger** (`/schedule`, `/loop`, or GitHub Actions) only after a clean manual run.
+4. **Activate the trigger** (`/goal`, `/schedule`, `/loop`, or GitHub Actions) only after a clean manual run.
 5. **Review** `eval-log.md` after a few cycles and tune the maker prompt / checker criteria.
 
 ## Layout

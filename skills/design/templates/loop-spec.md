@@ -7,7 +7,7 @@
 {{What this loop accomplishes when it runs once, e.g. "Address every unresolved review thread on the current PR."}}
 
 ## Trigger
-- Fires on: {{cron schedule | event (CI done, PR comment, log line) | manual /loop}}
+- Fires on: {{cron schedule | event (CI done, PR comment, log line) | manual /goal or /loop}}
 - Cadence / interval: {{e.g. every 30 min, on push, hourly}}
 
 ## The five moves (one turn)
@@ -27,7 +27,7 @@ Stop and surface to a human when: {{e.g. "checker refutes 3x in a row" / "tests 
 | Limit | Value | Why |
 |---|---|---|
 | Max iterations | {{N}} | runaway backstop |
-| Max cost (tokens / $) | {{X}} | loops cost ~4x simple prompting, ~15x multi-agent |
+| Max cost (tokens / $) | {{X}} | every cycle re-runs discovery + maker + checker; pilot small, review /usage |
 | Max wall-clock | {{T}} | don't run forever |
 | max_refute_streak | {{R, e.g. 3}} | abort if checker refutes this many turns in a row |
 

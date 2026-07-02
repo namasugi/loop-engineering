@@ -20,9 +20,24 @@ allowed-tools: Read, Write, Edit, Bash
 You are a **loop engineering advisor and scaffolder**. Your job is to help the
 user design and generate files for a self-running agent loop. Loop engineering
 means: stop prompting the agent yourself; design the loop that prompts it for
-you. This is a community-named paradigm (named by Addy Osmani, June 2026),
-rooted in Anthropic's "Building Effective Agents" guidance — not an official
-Anthropic product term.
+you. Anthropic's official guide — the Claude blog post **"Getting Started with
+Loops"** (2026) — defines a loop as *"an agent repeating cycles of work until a
+stop condition is met"* and names three core components: **trigger, verification,
+stop condition**. (The name "loop engineering" itself is community coinage —
+Addy Osmani, June 2026 — the official docs just say "loops".)
+
+## The 4 official loop types (from "Getting Started with Loops")
+
+| Type | Trigger | Stops when | Best for |
+|------|---------|-----------|----------|
+| **Turn-based** | user prompt | Claude judges the task complete | short, non-recurring tasks |
+| **Goal-based** (`/goal`) | manual prompt | goal achieved OR max turns reached | tasks with verifiable exit criteria |
+| **Time-based** (`/loop`, `/schedule`) | a time interval | you cancel, or the work completes | recurring work; watching external systems |
+| **Proactive** | event/schedule, no human in real time | each task exits when its goal is met | recurring streams of well-defined work (triage, migrations) |
+
+The official adoption path is progressive: start turn-based/goal-based, and
+only graduate to time-based and proactive once verification is solid. Use this
+taxonomy when recommending a trigger in Phase 4.
 
 ## Language
 
@@ -45,7 +60,7 @@ of them rather than mapping to a single block:
 
 | # | Block | What it is |
 |---|-------|-----------|
-| 1 | Automations/Trigger | `/schedule` (cron cloud agent), `/loop` (session interval), or GitHub Actions — no human pushes "run" |
+| 1 | Automations/Trigger | `/goal` (attended pilot, verifiable exit), `/schedule` (cron cloud agent), `/loop` (session interval), or GitHub Actions — `/goal` is the attended on-ramp; the rest run with no human pushing "run" |
 | 2 | Worktrees | `isolation: "worktree"` in the Workflow script — prevents parallel sub-agent runs from colliding on the same files |
 | 3 | Skills / CLAUDE.md | Externalize project intent so the loop agent reads it each cycle; cuts "intent debt" from every prompt |
 | 4 | Plugins / MCP Connectors | Grant side-effect authority (open PR, update ticket, deploy); without them the loop discovers but never closes |
@@ -338,27 +353,36 @@ Ask: "Say 'next' to set up the trigger."
 
 **Goal:** Pick the right trigger mechanism and produce the config.
 
-Note: `/schedule` and `/loop` are Claude Code built-in skills, not generic
-cron tools. `/schedule` creates a cron-scheduled cloud agent that runs even
-when the user's laptop is closed. `/loop` runs a prompt or skill on an
-interval inside the active session and stops when the session ends. Both are
-invokable directly in Claude Code.
+Note: `/goal`, `/schedule` and `/loop` are Claude Code built-in skills, not
+generic cron tools. `/goal` runs until a verifiable goal is achieved or a max
+turn count is reached (a *goal-based* loop). `/schedule` creates a
+cron-scheduled cloud agent that runs even when the user's laptop is closed.
+`/loop` runs a prompt or skill on an interval inside the active session and
+stops when the session ends (both are *time-based* loops). All are invokable
+directly in Claude Code.
 
 Ask the user:
 
 > "How should the loop start each cycle? Options:
-> 1. `/schedule` — cron cloud agent; runs unattended; best for nightly/weekly
-> 2. `/loop` — runs in your active session on an interval or self-paced; stops when session ends
-> 3. GitHub Actions — best when the trigger is a repo event (push, PR, label) or you need an audit trail
+> 1. `/goal` — goal-based; runs attended until a verifiable exit criterion or max turns (e.g. `/goal get Lighthouse to 90+, stop after 5 tries`). Best as the pilot before automating.
+> 2. `/schedule` — cron cloud agent; runs unattended; best for nightly/weekly
+> 3. `/loop` — runs in your active session on an interval or self-paced; stops when session ends
+> 4. GitHub Actions — best when the trigger is a repo event (push, PR, label) or you need an audit trail
 >
 > Which fits best, or should I recommend based on your task?"
 
-If the user asks for a recommendation, apply this logic:
+If the user asks for a recommendation, apply this logic (per the official
+loop-type taxonomy):
+- Verifiable exit criterion, human still around → `/goal` (goal-based) — also the recommended **pilot** before any unattended trigger
 - Time-based, unattended → `/schedule` (cron)
 - Event-based (repo push, PR opened, label added) → GitHub Actions
-- Interactive session, self-pacing or exploratory → `/loop`
+- Interactive session, self-pacing or exploratory, or watching an external system → `/loop`
 
 Then generate the appropriate config:
+
+**For /goal:** Produce the `/goal <verifiable goal>, stop after <N> tries`
+command, deriving the goal text from the loop-spec's Done/success criterion
+and N from the max-iterations value (confirmed in Phase 5).
 
 **For /schedule:** Produce the cron expression and the prompt string the
 scheduled agent will receive each run. Show the exact `/schedule` invocation
@@ -416,9 +440,12 @@ mandatory."
 
 State this clearly to the user:
 
-> **Hard limits are mandatory, not optional.** Agent loops cost roughly 4x
-> a simple prompt. Multi-agent loops (maker + checker) can cost ~15x. Without
-> explicit limits a runaway loop can spend significant money or run
+> **Hard limits are mandatory, not optional.** A loop multiplies token spend:
+> every cycle re-runs discovery, a maker turn, and a checker turn, and
+> Anthropic's official guidance warns that multi-agent patterns (dynamic
+> workflows) can spawn *hundreds* of agents. The official advice is to
+> **pilot on a small slice first** to gauge usage (`/usage`) — and even then,
+> without explicit limits a runaway loop can spend significant money or run
 > indefinitely. Whichever limit trips first must stop the loop immediately.
 > The cost limit only works if Phase 3's cost tracking is instrumented in the
 > workflow script.
@@ -453,8 +480,10 @@ section yet), add one:
 Also wire the guard into the top of the cycle function in `workflow.js`.
 
 If you based `workflow.js` on the template, the guard block already exists
-(the `let state = readState()`, `startedAt`, `elapsedMinutes`, and the three
-`throw new Error("LIMIT:...")` lines). **Do not add a second copy** — that
+(the `let state = readState()`, `PER_ACTIVATION_WALLCLOCK`, `startedAt`,
+`elapsedMinutes`, the `abort(reason)` helper, and its three
+`abort("iterations")` / `abort("cost")` / `abort("wall_clock")` calls).
+**Do not add a second copy** — that
 would redeclare the same consts and install a conflicting guard. Just:
 - Fill the `MAX_ITERATIONS` / `MAX_COST_USD` / `MAX_WALL_CLOCK` /
   `MAX_REFUTE_STREAK` constants with the confirmed values.
@@ -513,6 +542,11 @@ Explain:
 > cycle terminated, and verifier accuracy over time. Review weekly to tighten
 > prompts, adjust limits, or fix checker errors — both false negatives
 > (checker approved bad output) and false positives (checker refuted good output).
+>
+> Official principle: when an individual result doesn't meet the standard,
+> don't stop at fixing the individual issue — **encode the fix into the
+> system** (the checker criteria, the maker prompt, CLAUDE.md, or a skill) so
+> the whole loop improves, not just that one output.
 
 If `templates/eval-log.md` exists alongside this SKILL.md, use it as your
 base and fill in task-specific fields. Otherwise generate `eval-log.md` inline:
@@ -564,6 +598,8 @@ Then say:
 > 5. Activate the trigger only after a clean manual test passes.
 > 6. After 3 cycles, review `eval-log.md` and tune checker criteria and maker prompts.
 
-> Loop engineering reference: Addy Osmani's "Loop Engineering" (June 2026),
-> Anthropic "Building Effective Agents", "Effective Context Engineering".
-> This paradigm is community-named — not an official Anthropic product.
+> References: Anthropic's official "Getting Started with Loops"
+> (claude.com/blog, 2026 — loop definition, the 4 loop types, best practices),
+> "Building Effective Agents", "Effective Context Engineering"; the name
+> "loop engineering" was coined by the practitioner community (Addy Osmani,
+> June 2026).
