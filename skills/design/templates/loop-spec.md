@@ -9,6 +9,8 @@
 ## Trigger
 - Fires on: {{cron schedule | event (CI done, PR comment, log line) | manual /goal or /loop}}
 - Cadence / interval: {{e.g. every 30 min, on push, hourly}}
+- Why this cadence: {{how often new work actually arrives — don't run more often than you need to; an idle cycle still pays discovery + maker + checker}}
+- Unattended permissions: {{n/a (attended) | auto mode | allowlist of tools/MCP connectors — irreversible actions stay human-gated per Blast radius below}}
 
 ## The five moves (one turn)
 1. **Discovery** — how the loop finds work to do: {{e.g. `gh pr view` for unresolved threads}}

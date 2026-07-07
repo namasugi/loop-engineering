@@ -24,13 +24,15 @@ real files:
 1. **Inner loop** → `loop-spec.md` — the task decomposed into discovery → handoff → verification → persistence → scheduling
 2. **Maker/Checker** → `workflow.js` wired to the bundled `maker` / `checker` sub-agents — generation and verification as *separate* agents; the checker defaults to **refute** mode
 3. **Durable state** → `STATE.md` — the loop's memory on disk, not in the context window
-4. **Automation/Trigger** → `/goal` (goal-based pilot), `/loop`, `/schedule` (cron), or GitHub Actions
+4. **Automation/Trigger** → `/goal` (goal-based pilot), `/loop`, `/schedule` (cron), GitHub Actions — or the **proactive composition** (`/schedule` + verifiable per-task goal + the workflow + auto mode) for fully unattended streams of work
 5. **Hard limits** → max iterations / cost / wall-clock — whichever trips first stops the loop
 6. **Eval-driven improvement** → a log tracking cost, termination reason, verifier accuracy
 
 > ⚠️ Loops multiply token spend — every cycle re-runs discovery + maker + checker, and
-> multi-agent patterns can spawn hundreds of agents (per the official guidance: pilot on a
-> small slice first, review `/usage`). Hard limits (step 5) are mandatory, not optional.
+> multi-agent patterns can spawn hundreds of agents. The scaffold bakes in the official
+> token guidance: pilot on a small slice first, review `/usage`, script deterministic
+> moves instead of spending agent turns on them, and don't run the routine more often
+> than new work arrives. Hard limits (step 5) are mandatory, not optional.
 
 ## Install
 
@@ -79,7 +81,7 @@ After the scaffold is generated:
 1. **Review** `loop-spec.md` — especially the success definition and any MCP connectors.
 2. **Implement** the `readState` / `writeState` / `mergeQueue` stubs in `workflow.js` for your runtime.
 3. **Dry-run one cycle** with the Workflow tool and watch `STATE.md` update before automating.
-4. **Activate the trigger** (`/goal`, `/schedule`, `/loop`, or GitHub Actions) only after a clean manual run.
+4. **Activate the trigger** (`/goal`, `/schedule`, `/loop`, GitHub Actions, or the proactive composition) only after a clean manual run.
 5. **Review** `eval-log.md` after a few cycles and tune the maker prompt / checker criteria.
 
 ## Layout

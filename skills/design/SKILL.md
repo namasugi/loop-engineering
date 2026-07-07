@@ -39,6 +39,13 @@ The official adoption path is progressive: start turn-based/goal-based, and
 only graduate to time-based and proactive once verification is solid. Use this
 taxonomy when recommending a trigger in Phase 4.
 
+The 4th type — **proactive — is not a new primitive but a composition** of the
+others (per the official guide): `/schedule` fires the routine, a verifiable
+goal defines when each task is done, **skills** encode how to verify the work,
+a **dynamic workflow** (the Workflow tool running `workflow.js` from Phase 2)
+coordinates the sub-agents, and **auto mode** lets the routine run without
+stopping to ask permission. Phase 4 offers this composition explicitly.
+
 ## Language
 
 Conduct the entire interview — every question, confirmation, and explanation —
@@ -88,6 +95,11 @@ Otherwise ask:
 > "What task do you want to automate? Describe it in one or two sentences —
 > what triggers it, what a good outcome looks like, and roughly how often it
 > should run."
+
+If the user has no concrete task yet, apply the official getting-started
+advice: look at the work they already do, and pick one task where *they* are
+the bottleneck — a recurring piece they could hand off. Suggest 2–3 candidates
+from their project context and let them choose.
 
 Wait for the answer before proceeding.
 
@@ -146,6 +158,19 @@ one now:
 
 Tell the user where you wrote it and explain: "The loop agent reads this each
 cycle. Add any project-specific rules here to avoid repeating them in prompts."
+
+Then relay the official guide's four practices for keeping an unattended
+loop's output high-quality (briefly — one line each):
+
+> 1. **Keep the codebase clean and consistent** — the loop agent follows
+>    existing patterns, good or bad. Tidy the area the loop will touch first.
+> 2. **Give the loop verification capability** — encode "what good looks like"
+>    into skills/CLAUDE.md, and use MCP connectors to *measure* results, not
+>    just produce them.
+> 3. **Make docs accessible** — keep project/framework docs current and where
+>    the agent can read them; stale docs become stale loop output.
+> 4. **Review with a second agent that has fresh context** — that is exactly
+>    the checker we wire up in Phase 2.
 
 ### Step 1b — Loop-spec generation
 
@@ -264,6 +289,15 @@ the bundled sub-agents). Otherwise generate `workflow.js` with at minimum:
   are expected; omit for strictly sequential single-maker loops.
 - Hard-limit guard at the top of the cycle function (shell added in Phase 5).
 
+**Use scripts for deterministic work** (official token guidance). Before
+finalizing the script, check each of the 5 moves: if a move is deterministic —
+Discovery is a fixed `gh`/`grep`/API command, part of Verification is "run the
+test suite and read the exit code" — implement it as plain script code inside
+`workflow.js` instead of an `agent()` call. Spend agent turns only where
+judgment is needed; every agent call you replace with a script cuts both cost
+and nondeterminism. (The checker's *judgment* stays an agent — only its
+mechanical evidence-gathering belongs in script.)
+
 Run this script via the Claude Code Workflow tool — it handles sub-agent
 spawning, worktree isolation, and fan-out, and provides the `agent()` and
 `phase()` globals the script calls (mark the current phase with
@@ -364,19 +398,39 @@ directly in Claude Code.
 Ask the user:
 
 > "How should the loop start each cycle? Options:
-> 1. `/goal` — goal-based; runs attended until a verifiable exit criterion or max turns (e.g. `/goal get Lighthouse to 90+, stop after 5 tries`). Best as the pilot before automating.
+> 1. `/goal` — goal-based; runs attended until a verifiable exit criterion or max turns (e.g. `/goal get the homepage Lighthouse score to 90 or above, stop after 5 tries`). Best as the pilot before automating.
 > 2. `/schedule` — cron cloud agent; runs unattended; best for nightly/weekly
-> 3. `/loop` — runs in your active session on an interval or self-paced; stops when session ends
+> 3. `/loop` — runs in your active session on an interval or self-paced (e.g. `/loop 5m check my PR, address review comments, and fix failing CI`); stops when session ends
 > 4. GitHub Actions — best when the trigger is a repo event (push, PR, label) or you need an audit trail
+> 5. Proactive composition — `/schedule` + a verifiable per-task goal + a verification skill + `workflow.js` + auto mode; for a fully unattended, recurring stream of well-defined work (triage, migrations, dependency bumps)
 >
 > Which fits best, or should I recommend based on your task?"
 
 If the user asks for a recommendation, apply this logic (per the official
 loop-type taxonomy):
 - Verifiable exit criterion, human still around → `/goal` (goal-based) — also the recommended **pilot** before any unattended trigger
-- Time-based, unattended → `/schedule` (cron)
+- Time-based, unattended, one well-bounded job per activation → `/schedule` (cron)
 - Event-based (repo push, PR opened, label added) → GitHub Actions
 - Interactive session, self-pacing or exploratory, or watching an external system → `/loop`
+- Recurring **stream** of well-defined work items, fully unattended, each with its own verifiable exit → the **proactive composition** (option 5 is option 2 plus the per-task goal, verification skill, and auto-mode wiring — when in doubt between the two, pick 5 for anything fully unattended)
+
+**Cadence check** (official token guidance: *don't run routines more often
+than you need to*). Before writing any cron expression or interval, ask how
+often new work actually arrives. An idle cycle still pays for discovery +
+maker + checker; if bug reports land daily, an hourly loop burns ~24× the
+tokens for the same output. Propose the slowest cadence that still meets the
+task's latency need, and say why.
+
+**Permissions for unattended triggers** (`/schedule`, GitHub Actions, the
+proactive composition). An unattended run stalls — or dies — the first time it
+hits a permission prompt with no human present. Per the official guide, this
+is what **auto mode** is for: the routine runs without stopping to ask for
+permission. Tell the user to either enable auto mode for the scheduled agent
+or pre-authorize the specific tools/MCP connectors from Phase 0 in an
+allowlist. Never blanket-authorize the irreversible actions the loop-spec's
+Blast radius section marks as human-approval — those stay gated in
+`workflow.js` behind the checker pass *and* the Blast radius rule, even in
+auto mode.
 
 Then generate the appropriate config:
 
@@ -385,8 +439,11 @@ command, deriving the goal text from the loop-spec's Done/success criterion
 and N from the max-iterations value (confirmed in Phase 5).
 
 **For /schedule:** Produce the cron expression and the prompt string the
-scheduled agent will receive each run. Show the exact `/schedule` invocation
-the user should run once to register it.
+scheduled agent will receive each run. The scheduled prompt must drive
+`workflow.js` through the Workflow tool — a bare maker prompt would silently
+drop the checker, STATE.md persistence, and hard limits (same caveat as
+GitHub Actions below). Show the exact `/schedule` invocation the user should
+run once to register it.
 
 **For /loop:** Produce the `/loop <interval> <prompt-or-skill>` command.
 
@@ -424,10 +481,34 @@ jobs:
 
 Adjust `--allowedTools` to include any MCP connectors identified in Phase 0.
 
+**For the proactive composition:** assemble the pieces already built, per the
+official recipe (`/schedule` + goal + skills + dynamic workflow + auto mode):
+
+1. **Trigger** — produce the `/schedule` invocation (cron + prompt), as above.
+2. **Per-task goal** — the scheduled prompt must state the verifiable exit
+   criterion for *each task*, taken from the loop-spec's Done / success
+   criterion (each task exits when its goal is met; the routine itself runs
+   until the user cancels it).
+3. **Verification skill** — the checker criteria live in the loop-spec and the
+   bundled `checker` agent; if verification needs project-specific know-how
+   (how to run the right tests, what "good" looks like), encode it as a
+   project skill or CLAUDE.md section so every activation reads it.
+4. **Dynamic workflow** — the scheduled prompt drives `workflow.js` from
+   Phase 2 through the Workflow tool (do not paste a bare maker prompt — that
+   would drop the checker, state, and limits).
+5. **Auto mode / allowlist** — apply the permissions guidance above so the
+   routine never stalls on a prompt; irreversible actions stay gated.
+
+Show the user the assembled `/schedule` invocation and the scheduled prompt
+text that wires 2–4 together.
+
 Now go back to `loop-spec.md` and record the confirmed mechanism and cron
-expression / interval: fill in the `## Trigger` fields (Fires on / Cadence) and
-the **Scheduling** move (move #5 under `## The five moves` in the template; the
-`## Scheduling` section if you generated the spec inline).
+expression / interval: fill in **all four** `## Trigger` fields — Fires on,
+Cadence / interval, **Why this cadence** (the justification from the Cadence
+check above), and **Unattended permissions** (the auto-mode/allowlist decision
+from the Permissions paragraph above; `n/a (attended)` for `/goal` or `/loop`) —
+and the **Scheduling** move (move #5 under `## The five moves` in the template;
+the `## Scheduling` section if you generated the spec inline).
 
 Ask: "Trigger config generated. Say 'next' to set hard limits — this step is
 mandatory."
@@ -449,6 +530,18 @@ State this clearly to the user:
 > indefinitely. Whichever limit trips first must stop the loop immediately.
 > The cost limit only works if Phase 3's cost tracking is instrumented in the
 > workflow script.
+
+Then run through the official token-management checklist and confirm each item
+is already handled in this scaffold (fix any that isn't before proceeding):
+
+| Official practice | Where it lives in this scaffold |
+|---|---|
+| Choose the right primitive and model for the job | Phase 0 model choice; Phase 4 trigger choice |
+| Define clear success and stop criteria | loop-spec Done / Failure criteria + this phase's limits |
+| Pilot before a large run | `/goal` pilot recommended in Phase 4 |
+| Use scripts for deterministic work | Phase 2 script-vs-agent check |
+| Don't run routines more often than you need to | Phase 4 cadence check |
+| Review usage | `/usage` after the pilot and each early cycle; Phase 6 eval log |
 
 Collect or propose values for all four:
 

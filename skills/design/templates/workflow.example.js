@@ -76,6 +76,10 @@ if (elapsedMinutes >= MAX_WALL_CLOCK) abort("wall_clock")
 // the loop dies permanently the first time it empties (even the next /schedule
 // activation would read an empty queue and terminate). For a fixed pre-seeded backlog
 // this may legitimately return nothing — the queue just drains to done.
+// Official token guidance — use scripts for deterministic work: if discovery is a
+// fixed command (a `gh` query, a grep, an API call), replace this agent() call with
+// plain script code that produces the item list. Keep the agent only when finding
+// work takes judgment.
 phase('Discover')
 const discovered = await agent(
   `{{DISCOVERY PROMPT — run the loop-spec Discovery move: scan the source (files,
